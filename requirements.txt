@@ -9,4 +9,5 @@ fpdf2==2.6.0
 matplotlib==3.6.3
 pyproj==3.6.1       # ¡Versión mucho más reciente! (Serie 3.x requiere PROJ 8+)
 unicodedata2
+streamlit_searchbox
 
