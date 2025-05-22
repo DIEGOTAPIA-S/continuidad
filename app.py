@@ -5,7 +5,7 @@ import folium
 from streamlit_folium import st_folium
 from folium.plugins import Draw, Search, LocateControl, Fullscreen, MarkerCluster
 from shapely.geometry import Point, Polygon, shape
-from fpdf import FPDF
+from fpdf import FPDF # Asegúrate de que este es fpdf2 si lo usas
 from datetime import datetime
 import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
@@ -148,8 +148,8 @@ def load_data(uploaded_file):
             df = pd.read_csv(uploaded_file)
 
         # Validación de columnas
-        required_cols = ["Nombre", "Dirección", "Sede asignada", "Teléfono", 
-                        "Ciudad", "Subproceso", "Criticidad", "Latitud", "Longitud"]
+        required_cols = ["Nombre", "Dirección", "Sede asignada", "Teléfono",
+                         "Ciudad", "Subproceso", "Criticidad", "Latitud", "Longitud"]
         if not all(col in df.columns for col in required_cols):
             st.error("El archivo no tiene las columnas requeridas")
             return None
@@ -428,6 +428,13 @@ def get_table_download_link(df, filename="reporte.csv"):
     return href
 
 # ---------- INTERFAZ ----------
+# Inicializar variables de filtro al inicio
+# Esto asegura que siempre existan, incluso antes de subir un archivo
+ciudad = "Todas"
+criticidad = "Todas"
+subproceso = "Todos"
+df = None # Asegurar que df esté definido desde el principio
+
 with st.sidebar:
     st.header("⚙️ Configuración")
     tile_provider = st.selectbox("Seleccionar tipo de mapa", list(TILES.keys()), index=0)
@@ -435,24 +442,39 @@ with st.sidebar:
     st.header("🔍 Filtros")
     archivo = st.file_uploader("📄 Subir CSV de colaboradores", type="csv")
     
-    if archivo and 'df' in st.session_state:
-        df = st.session_state.df
-        ciudades = ["Todas"] + sorted(df["Ciudad"].unique().tolist())
-        criticidades = ["Todas"] + sorted(df["Criticidad"].unique().tolist())
-        subprocesos = ["Todos"] + sorted(df["Subproceso"].unique().tolist())
-        
-        ciudad = st.selectbox("Ciudad", ciudades, index=0)
-        criticidad = st.selectbox("Criticidad", criticidades, index=0)
-        subproceso = st.selectbox("Subproceso", subprocesos, index=0)
+    # Mover la lógica de los selectbox para que siempre se creen
+    # pero que sus opciones dependan de si hay un archivo cargado
+    if archivo: # Procesar el archivo subido INMEDIATAMENTE para tener el df
+        df = load_data(archivo) # Cargar el df una vez que se sube el archivo
+        if df is not None:
+            st.session_state.df = df # Guardar el df en session_state para que persista
+        else:
+            st.session_state.df = None # Limpiar el df si la carga falla
+    
+    # Ahora, crear los selectbox. Si no hay df cargado, usar opciones predeterminadas.
+    if 'df' in st.session_state and st.session_state.df is not None:
+        current_df = st.session_state.df # Usar el df desde session_state
+        ciudades_opciones = ["Todas"] + sorted(current_df["Ciudad"].unique().tolist())
+        criticidades_opciones = ["Todas"] + sorted(current_df["Criticidad"].unique().tolist())
+        subprocesos_opciones = ["Todos"] + sorted(current_df["Subproceso"].unique().tolist())
+    else:
+        # Opciones por defecto si no hay archivo cargado
+        ciudades_opciones = ["Todas"]
+        criticidades_opciones = ["Todas"]
+        subprocesos_opciones = ["Todos"]
+
+    ciudad = st.selectbox("Ciudad", ciudades_opciones, index=0)
+    criticidad = st.selectbox("Criticidad", criticidades_opciones, index=0)
+    subproceso = st.selectbox("Subproceso", subprocesos_opciones, index=0)
     
     with st.sidebar.expander("🔍 BUSCAR DIRECCIÓN EN COLOMBIA", expanded=True):
         direccion = st_searchbox(
-            lambda searchterm: [loc.address for loc in 
-                             Nominatim(user_agent="autocomplete").geocode(
-                                 f"{searchterm}, Colombia", 
-                                 exactly_one=False, 
-                                 limit=5
-                             )] if searchterm and len(searchterm) > 3 else [],
+            lambda searchterm: [loc.address for loc in
+                                 Nominatim(user_agent="autocomplete").geocode(
+                                     f"{searchterm}, Colombia",
+                                     exactly_one=False,
+                                     limit=5
+                                 )] if searchterm and len(searchterm) > 3 else [],
             label="🔍 Buscar dirección:",
             placeholder="Ej: Carrera 15 #32-41, Bogotá",
             key="direccion_autocomplete"
@@ -482,44 +504,48 @@ for nombre, datos in SEDES_FIJAS.items():
         icon=folium.Icon(color=datos["color"], icon=datos["icono"], prefix='fa')
     ).add_to(m)
 
-# Procesar archivo subido
-if archivo:
-    df = load_data(archivo)
-    
-    if df is not None:
-        st.session_state.df = df
-        df_filtrado = aplicar_filtros(df, ciudad, criticidad, subproceso)
-        
-        marker_cluster = MarkerCluster(
-            name="Colaboradores",
-            max_cluster_radius=50,
-            disable_clustering_at_zoom=14
+# Procesar archivo subido y aplicar filtros
+# Asegurarse de usar df del session_state para la lógica principal
+if 'df' in st.session_state and st.session_state.df is not None:
+    df_para_mapa = st.session_state.df # Usar el df del session_state
+    df_filtrado = aplicar_filtros(df_para_mapa, ciudad, criticidad, subproceso) # <-- Línea 491 ajustada
+
+    marker_cluster = MarkerCluster(
+        name="Colaboradores",
+        max_cluster_radius=50,
+        disable_clustering_at_zoom=14
+    ).add_to(m)
+
+    for _, row in df_filtrado.iterrows():
+        folium.Marker(
+            location=[row["Latitud"], row["Longitud"]],
+            popup=f"<b>{row['Nombre']}</b><br>Sede: {row['Sede asignada']}<br>Subproceso: {row['Subproceso']}<br>Criticidad: {row['Criticidad']}",
+            icon=folium.Icon(icon='user', prefix='fa', color='lightblue')
+        ).add_to(marker_cluster)
+
+    if hasattr(st.session_state, 'emergencia_location'):
+        folium.Marker(
+            location=st.session_state.emergencia_location["coords"],
+            popup=f"🚨 EMERGENCIA\n{st.session_state.emergencia_location['address']}",
+            icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
         ).add_to(m)
-        
-        for _, row in df_filtrado.iterrows():
-            folium.Marker(
-                location=[row["Latitud"], row["Longitud"]],
-                popup=f"<b>{row['Nombre']}</b><br>Sede: {row['Sede asignada']}<br>Subproceso: {row['Subproceso']}<br>Criticidad: {row['Criticidad']}",
-                icon=folium.Icon(icon='user', prefix='fa', color='lightblue')
-            ).add_to(marker_cluster)
-        
-        if hasattr(st.session_state, 'emergencia_location'):
-            folium.Marker(
-                location=st.session_state.emergencia_location["coords"],
-                popup=f"🚨 EMERGENCIA\n{st.session_state.emergencia_location['address']}",
-                icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
-            ).add_to(m)
-            m.location = st.session_state.emergencia_location["coords"]
+        m.location = st.session_state.emergencia_location["coords"]
 
 # Mostrar mapa
 mapa_interactivo = st_folium(m, width=1200, height=600, key="mapa_principal")
 
 # Generar reporte si se dibuja una zona
+# Asegurarse de usar el df_filtrado del session_state para esta parte también
 if mapa_interactivo.get("last_active_drawing"):
     zona_dibujada = mapa_interactivo["last_active_drawing"]
-    if archivo and df is not None:
-        reporte = generar_reporte(zona_dibujada, df_filtrado, SEDES_FIJAS)
-        
+    # Usamos df_filtrado que ya está en el scope superior o en session_state si se guarda
+    if 'df' in st.session_state and st.session_state.df is not None: # Verificar si hay df en session_state
+        # Recalcular df_filtrado aquí para asegurar que los filtros se apliquen si se dibuja sin interacción previa
+        current_df_for_report = st.session_state.df
+        df_filtrado_for_report = aplicar_filtros(current_df_for_report, ciudad, criticidad, subproceso)
+
+        reporte = generar_reporte(zona_dibujada, df_filtrado_for_report, SEDES_FIJAS)
+
         if reporte:
             st.session_state.reporte_emergencia = reporte
             st.success(f"Zona de emergencia identificada con {reporte['total_colaboradores']} colaboradores y {reporte['total_sedes']} sedes afectadas")
@@ -582,16 +608,18 @@ if 'reporte_emergencia' in st.session_state:
                 st.error(f"Error al generar el PDF: {str(e)}")
 
 # Dashboard general
-if archivo and df is not None:
+# Asegurarse de usar el df del session_state
+if 'df' in st.session_state and st.session_state.df is not None:
+    df_dashboard = st.session_state.df
     st.subheader("📊 Dashboard General")
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Colaboradores", len(df))
-    col2.metric("Sedes Únicas", df["Sede asignada"].nunique())
-    col3.metric("Ciudades", df["Ciudad"].nunique())
+    col1.metric("Total Colaboradores", len(df_dashboard))
+    col2.metric("Sedes Únicas", df_dashboard["Sede asignada"].nunique())
+    col3.metric("Ciudades", df_dashboard["Ciudad"].nunique())
     
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-    df["Ciudad"].value_counts().head(5).plot(kind='bar', ax=ax[0], color='skyblue')
+    df_dashboard["Ciudad"].value_counts().head(5).plot(kind='bar', ax=ax[0], color='skyblue')
     ax[0].set_title('Top 5 Ciudades')
-    df["Sede asignada"].value_counts().head(5).plot(kind='bar', ax=ax[1], color='lightgreen')
+    df_dashboard["Sede asignada"].value_counts().head(5).plot(kind='bar', ax=ax[1], color='lightgreen')
     ax[1].set_title('Top 5 Sedes')
     st.pyplot(fig)
