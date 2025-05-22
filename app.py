@@ -430,10 +430,13 @@ def get_table_download_link(df, filename="reporte.csv"):
 # ---------- INTERFAZ ----------
 # Inicializar variables de filtro al inicio
 # Esto asegura que siempre existan, incluso antes de subir un archivo
+# También inicializar df y df_filtrado_para_reporte
 ciudad = "Todas"
 criticidad = "Todas"
 subproceso = "Todos"
-df = None # Asegurar que df esté definido desde el principio
+df_main_app = None # Usaremos este para el df principal de la app
+df_filtrado_para_reporte = None # Para el reporte específicamente
+
 
 with st.sidebar:
     st.header("⚙️ Configuración")
@@ -442,21 +445,21 @@ with st.sidebar:
     st.header("🔍 Filtros")
     archivo = st.file_uploader("📄 Subir CSV de colaboradores", type="csv")
     
-    # Mover la lógica de los selectbox para que siempre se creen
-    # pero que sus opciones dependan de si hay un archivo cargado
-    if archivo: # Procesar el archivo subido INMEDIATAMENTE para tener el df
-        df = load_data(archivo) # Cargar el df una vez que se sube el archivo
-        if df is not None:
-            st.session_state.df = df # Guardar el df en session_state para que persista
+    # Procesar el archivo subido INMEDIATAMENTE para tener el df en session_state
+    if archivo:
+        df_loaded = load_data(archivo)
+        if df_loaded is not None:
+            st.session_state.df_data = df_loaded # Usar un nombre más específico en session_state
+            st.success("Archivo CSV cargado exitosamente.")
         else:
-            st.session_state.df = None # Limpiar el df si la carga falla
+            st.session_state.df_data = None # Limpiar el df si la carga falla
     
     # Ahora, crear los selectbox. Si no hay df cargado, usar opciones predeterminadas.
-    if 'df' in st.session_state and st.session_state.df is not None:
-        current_df = st.session_state.df # Usar el df desde session_state
-        ciudades_opciones = ["Todas"] + sorted(current_df["Ciudad"].unique().tolist())
-        criticidades_opciones = ["Todas"] + sorted(current_df["Criticidad"].unique().tolist())
-        subprocesos_opciones = ["Todos"] + sorted(current_df["Subproceso"].unique().tolist())
+    if 'df_data' in st.session_state and st.session_state.df_data is not None:
+        df_main_app = st.session_state.df_data # Asignar el df a la variable local para usarla
+        ciudades_opciones = ["Todas"] + sorted(df_main_app["Ciudad"].unique().tolist())
+        criticidades_opciones = ["Todas"] + sorted(df_main_app["Criticidad"].unique().tolist())
+        subprocesos_opciones = ["Todos"] + sorted(df_main_app["Subproceso"].unique().tolist())
     else:
         # Opciones por defecto si no hay archivo cargado
         ciudades_opciones = ["Todas"]
@@ -504,11 +507,11 @@ for nombre, datos in SEDES_FIJAS.items():
         icon=folium.Icon(color=datos["color"], icon=datos["icono"], prefix='fa')
     ).add_to(m)
 
-# Procesar archivo subido y aplicar filtros
-# Asegurarse de usar df del session_state para la lógica principal
-if 'df' in st.session_state and st.session_state.df is not None:
-    df_para_mapa = st.session_state.df # Usar el df del session_state
-    df_filtrado = aplicar_filtros(df_para_mapa, ciudad, criticidad, subproceso) # <-- Línea 491 ajustada
+# Procesar archivo subido y aplicar filtros para el mapa y las visualizaciones
+# NOTA: Usamos df_main_app que es el que se actualiza desde st.session_state.df_data
+if df_main_app is not None: # Esta es la condición clave ahora para el flujo principal
+    df_filtrado = aplicar_filtros(df_main_app, ciudad, criticidad, subproceso) # <-- Línea 491 (ahora ajustada)
+    df_filtrado_para_reporte = df_filtrado # Guardar la referencia para el reporte si es necesario
 
     marker_cluster = MarkerCluster(
         name="Colaboradores",
@@ -535,20 +538,18 @@ if 'df' in st.session_state and st.session_state.df is not None:
 mapa_interactivo = st_folium(m, width=1200, height=600, key="mapa_principal")
 
 # Generar reporte si se dibuja una zona
-# Asegurarse de usar el df_filtrado del session_state para esta parte también
 if mapa_interactivo.get("last_active_drawing"):
     zona_dibujada = mapa_interactivo["last_active_drawing"]
-    # Usamos df_filtrado que ya está en el scope superior o en session_state si se guarda
-    if 'df' in st.session_state and st.session_state.df is not None: # Verificar si hay df en session_state
-        # Recalcular df_filtrado aquí para asegurar que los filtros se apliquen si se dibuja sin interacción previa
-        current_df_for_report = st.session_state.df
-        df_filtrado_for_report = aplicar_filtros(current_df_for_report, ciudad, criticidad, subproceso)
-
-        reporte = generar_reporte(zona_dibujada, df_filtrado_for_report, SEDES_FIJAS)
-
+    # Usar df_filtrado_para_reporte que ya fue calculado o asegurar que exista
+    if df_filtrado_para_reporte is not None:
+        reporte = generar_reporte(zona_dibujada, df_filtrado_para_reporte, SEDES_FIJAS)
+        
         if reporte:
             st.session_state.reporte_emergencia = reporte
             st.success(f"Zona de emergencia identificada con {reporte['total_colaboradores']} colaboradores y {reporte['total_sedes']} sedes afectadas")
+    else:
+        st.warning("Por favor, cargue un archivo CSV de colaboradores antes de generar un reporte de zona.")
+
 
 # Mostrar reporte si existe
 if 'reporte_emergencia' in st.session_state:
@@ -608,18 +609,16 @@ if 'reporte_emergencia' in st.session_state:
                 st.error(f"Error al generar el PDF: {str(e)}")
 
 # Dashboard general
-# Asegurarse de usar el df del session_state
-if 'df' in st.session_state and st.session_state.df is not None:
-    df_dashboard = st.session_state.df
+if df_main_app is not None:
     st.subheader("📊 Dashboard General")
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Colaboradores", len(df_dashboard))
-    col2.metric("Sedes Únicas", df_dashboard["Sede asignada"].nunique())
-    col3.metric("Ciudades", df_dashboard["Ciudad"].nunique())
+    col1.metric("Total Colaboradores", len(df_main_app))
+    col2.metric("Sedes Únicas", df_main_app["Sede asignada"].nunique())
+    col3.metric("Ciudades", df_main_app["Ciudad"].nunique())
     
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-    df_dashboard["Ciudad"].value_counts().head(5).plot(kind='bar', ax=ax[0], color='skyblue')
+    df_main_app["Ciudad"].value_counts().head(5).plot(kind='bar', ax=ax[0], color='skyblue')
     ax[0].set_title('Top 5 Ciudades')
-    df_dashboard["Sede asignada"].value_counts().head(5).plot(kind='bar', ax=ax[1], color='lightgreen')
+    df_main_app["Sede asignada"].value_counts().head(5).plot(kind='bar', ax=ax[1], color='lightgreen')
     ax[1].set_title('Top 5 Sedes')
     st.pyplot(fig)
