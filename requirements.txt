@@ -1,11 +1,9 @@
 streamlit==1.22.0
 folium==0.14.0
-streamlit-folium==0.11.1
+streamlit-folium==0.10.1  # Versión modificada
 geopy==2.3.0
 pandas==1.5.3
-shapely==2.0.1
-fpdf2==2.7.4
-matplotlib==3.7.1
-streamlit-searchbox==0.0.6
-pyproj==3.6.1
-certifi==2023.7.22
+shapely==1.8.5  # Versión anterior más estable
+fpdf2==2.6.0
+matplotlib==3.6.3
+pyproj==3.4.0  # Versión reducida
