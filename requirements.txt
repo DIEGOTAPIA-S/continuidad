@@ -1,6 +1,6 @@
 streamlit==1.22.0
 folium==0.14.0
-streamlit-folium==0.10.1  # Versión modificada
+streamlit-folium==0.10.0
 geopy==2.3.0
 pandas==1.5.3
 shapely==1.8.5  # Versión anterior más estable
