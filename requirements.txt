@@ -3,6 +3,7 @@ folium==0.14.0
 streamlit-folium
 geopy==2.3.0
 pandas==1.5.3
+numpy==1.23.5
 shapely==1.8.4
 fpdf2==2.6.0
 matplotlib==3.6.3
