@@ -1,15 +1,12 @@
-streamlit
-folium
+streamlit           # Deja que instale la última versión estable (ahora que el entorno Python será más reciente)
+folium              # Deja que streamlit-folium resuelva la compatibilidad
 streamlit-folium
 geopy==2.3.0
 pandas==1.5.3
-numpy==1.23.5
-shapely==1.7.1
+numpy==1.23.5       # Mantenemos esta para compatibilidad con pandas
+shapely==2.0.1      # ¡Versión mucho más reciente! (Serie 2.x requiere PROJ 8+)
 fpdf2==2.6.0
 matplotlib==3.6.3
-pyproj==2.6.1
+pyproj==3.6.1       # ¡Versión mucho más reciente! (Serie 3.x requiere PROJ 8+)
 unicodedata2
-
-
-
 
