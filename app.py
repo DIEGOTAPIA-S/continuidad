@@ -128,6 +128,91 @@ SEDES_FIJAS = {
         "color": "blue",
         "icono": "hospital"
     }
+     "Centro Médico Colmédica Barranquilla Alto Prado": {
+        "direccion": "Centro Comercial Cenco Altos del Prado, Calle 76 # 55-52 , Barranquilla",
+        "coordenadas": [11.004448920487901, -74.80367483068213],
+        "color": "blue",
+        "icono": "hospital"
+    }
+     "Centro Médico Colmédica Bucaramanga": {
+        "direccion": "Cl 52 A 31 - 68 , Bucaramanga",
+        "coordenadas": [7.115442288584315, -73.11191898409285],
+        "color": "blue",
+        "icono": "hospital"
+    }
+     "Centro Médico Colmédica Cali": {
+        "direccion": "Cr 40 5C – 118 , Cali",
+        "coordenadas": [3.4222730018219965, -76.543009],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+     "Centro Médico Colmédica Las Ramblas": {
+        "direccion": "CC las Ramblas, Kilómetro 10, Cartagena",
+        "coordenadas": [10.519058074115778, -75.46619794203212],
+        "color": "blue",
+        "icono": "hospital"
+    }
+     "Centro Médico Colmédica Bocagrande": {
+        "direccion": "Cr 4 # 4 - 78, Cartagena",
+        "coordenadas": [10.398251290207035, -75.55869054232946],
+        "color": "blue",
+        "icono": "hospital"
+    }
+     "Centro Médico Colmédica Chía": {
+        "direccion": "Belenus Chía Km 2 vía Chía, Chía",
+        "coordenadas": [4.883582951131957, -74.03724042329465],
+        "color": "blue",
+        "icono": "hospital"
+    }
+    "Centro Médico Colmédica Ibagué": {
+        "direccion": "Cra. 5 # 30 - 05, Ibagué",
+        "coordenadas": [4.443406489429007, -75.22333030682144],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+    "Centro Médico Colmédica Manizales": {
+        "direccion": "C.C. Sancancio, Cr 27 A 66 - 30, Manizales",
+        "coordenadas": [5.054334221451733, -75.48438483625416],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+    "Centro Médico Colmédica Medellín - El Poblado": {
+        "direccion": "El Poblado, Cr 43B 14 - 44, Medellin",
+        "coordenadas": [6.217569802008974, -75.5599849954142],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+    "Centro Médico Colmédica Neiva": {
+        "direccion": "Cl 19 # 5a - 50, Neiva",
+        "coordenadas": [2.9372380321218237, -75.28714836532676],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+    "Centro Médico Colmédica Pereira": {
+        "direccion": "Megacentro, Cl 19 N 12 – 50, Pereira",
+        "coordenadas": [4.805020850357549, -75.68778748692321],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
+    "Centro Médico Colmédica Villavicencio": {
+        "direccion": "Barzal Alto, Cl 32 # 40A – 31, Villavicencio",
+        "coordenadas": [4.1424147251065335, -73.63860592868659],
+        "color": "blue",
+        "icono": "hospital"
+    }
+   "Centro Médico Colmédica Yopal": {
+        "direccion": "Clínica Nieves, Cr 21 35 - 68, Yopal",
+        "coordenadas": [5.327695694529845, -72.38637738635713],
+        "color": "blue",
+        "icono": "hospital"
+    }
+
 }
 
 # ---------- FUNCIONES ----------
