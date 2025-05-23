@@ -129,7 +129,7 @@ SEDES_FIJAS = {
         "icono": "hospital"
     },
      "Centro Médico Colmédica Barranquilla Alto Prado": {
-        "direccion": "Centro Comercial Cenco Altos del Prado, Calle 76 # 55-52 , Barranquilla",
+        "direccion": "Centro Comercial Cenco Altos del Prado, Calle 76 # 55-52, Barranquilla",
         "coordenadas": [11.004448920487901, -74.80367483068213],
         "color": "blue",
         "icono": "hospital"
